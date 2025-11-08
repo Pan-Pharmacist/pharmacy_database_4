@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมโรงพยาบาลนพรัตนราชธานี</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .button-hover {
+            transition: all 0.3s ease;
+        }
+        .button-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        .section-title {
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4" style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);">
+                🏥 โปรแกรมโรงพยาบาลนพรัตนราชธานี
+            </h1>
+            <p class="text-xl text-white/90">ระบบจัดการงานเภสัชกรรม</p>
+        </div>
+
+        <div class="mb-12">
+            <h2 class="text-3xl font-bold text-center mb-8 section-title bg-white/20 backdrop-blur-sm rounded-lg py-4 text-white">
+                📚 เอกสารทางเภสัชกรรม
+            </h2>
+            <div id="pharmacyDocsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                </div>
+        </div>
+
+        <div class="text-center text-white/80 mt-12">
+            <p class="text-lg">© 2025 กลุ่มงานเภสัชกรรมโรงพยาบาลนพรัตนราชธานี</p>
+        </div>
+    </div>
+
+    <div id="comingSoonModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md mx-4 text-center card-shadow">
+            <div class="text-6xl mb-4">🚧</div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">กำลังพัฒนา</h3>
+            <p id="modalText" class="text-gray-600 mb-6 text-lg"></p>
+            <button onclick="closeModal()" 
+                    class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300">
+                ตกลง
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ลิงก์ CSV ที่เผยแพร่จาก Google Sheet ของคุณ (คงเดิม)
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6mNNyg6TjUL72kQ_fpy9Glk5qNVOJcS1o8fe-ykObfpFYMOpEi_RG9Bokv1zTXVBjCHvE4r0vHShW/pub?output=csv'; 
+
+        function openProgram(url) {
+            if (url) {
+                // เปิด URL (ไฟล์ PDF) ในแท็บใหม่
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
+        }
+
+        function showComingSoon(programName) {
+            const modal = document.getElementById('comingSoonModal');
+            const modalText = document.getElementById('modalText');
+            modalText.textContent = `${programName} กำลังอยู่ในระหว่างการพัฒนา จะเปิดให้บริการในเร็วๆ นี้`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('comingSoonModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // ฟังก์ชันสร้างปุ่มเอกสารแบบไดนามิก (ปรับขนาดปุ่มให้เล็กลงประมาณ 20%)
+        function createDocButton(emoji, name, url) {
+            const button = document.createElement('button');
+            // ปรับ padding (p-6 -> p-5) และความสูงขั้นต่ำ (min-h-[140px] -> min-h-[110px])
+            button.onclick = () => openProgram(url); 
+            button.className = 'bg-white rounded-xl p-5 card-shadow button-hover text-center min-h-[110px] flex flex-col justify-center';
+            button.innerHTML = `
+                <div class="text-3xl mb-2">${emoji}</div> 
+                <div class="text-base font-semibold text-gray-800">${name}</div> 
+            `;
+            return button;
+        }
+
+        // ฟังก์ชันดึงและแสดงข้อมูลจาก Google Sheet
+        async function fetchAndRenderDocs() {
+            const container = document.getElementById('pharmacyDocsContainer');
+            if (!container) return;
+
+            try {
+                // ดึงข้อมูล CSV
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                const csvText = await response.text();
+                
+                // แยกข้อมูลเป็นแถวและคอลัมน์ (สมมติว่า ProgramName,PDFLink,ButtonEmoji ตามลำดับ)
+                const rows = csvText.trim().split('\n').map(row => row.split(','));
+                
+                // ใช้ข้อมูลตั้งแต่แถวที่ 2 เป็นต้นไป (แถวแรกคือหัวตาราง)
+                const data = rows.slice(1); 
+
+                data.forEach(row => {
+                    if (row.length >= 3) { 
+                        // .replace(/^"|"$/g, '') เพื่อลบเครื่องหมายคำพูดรอบข้อความที่มาจาก CSV
+                        const docName = row[0].trim().replace(/^"|"$/g, ''); 
+                        const pdfLink = row[1].trim().replace(/^"|"$/g, '');
+                        const emoji = row[2].trim().replace(/^"|"$/g, '');
+
+                        if (docName && pdfLink) {
+                            const button = createDocButton(emoji, docName, pdfLink);
+                            container.appendChild(button);
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการโหลดเอกสาร:', error);
+                container.innerHTML = '<p class="text-center text-red-300">⚠️ ไม่สามารถโหลดรายการเอกสารได้ โปรดตรวจสอบลิงก์ Google Sheet</p>';
+            }
+        }
+
+        // เรียกใช้ฟังก์ชันเมื่อหน้าเว็บโหลดเสร็จ
+        document.addEventListener('DOMContentLoaded', fetchAndRenderDocs);
+
+        // Close modal when clicking outside
+        document.getElementById('comingSoonModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'984947b1b0207334',t:'MTc1ODc5MDI5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
